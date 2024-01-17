@@ -6,6 +6,7 @@ from sqlalchemy import create_engine, Column, Integer, String, MetaData, Table
 from databases import Database
 import logging
 
+
 DATABASE_URL = "sqlite:///./filmes.db"
 
 engine = create_engine(DATABASE_URL)
@@ -37,6 +38,7 @@ async def startup_db_client():
 async def shutdown_db_client():
     await database.disconnect()
 
+#Adicionando filme
 @app.post("/filmes/", response_model=FilmeCreate)
 async def create_filme(filme: FilmeCreate):
     query = filmes.insert().values(titulo=filme.titulo, diretor=filme.diretor)
