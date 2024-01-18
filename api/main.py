@@ -34,7 +34,7 @@ class FilmeUpdate(BaseModel):
     titulo: str = None
     diretor: str = None
     ano: int = None
-    
+
 app = FastAPI()# Cria uma instância do framework FastAPI.
 
 @app.on_event("startup") #Define um evento de startup para a aplicação FastAPI
@@ -52,68 +52,71 @@ async def create_filme(filme: FilmeCreate):
     last_record_id = await database.execute(query) #Executa a consulta no banco de dados e obtém o ID do último registro inserido
     return {"id": last_record_id, **filme.dict()}  #Retorna um dicionário contendo o ID do último registro e os dados do filme
 
-@app.get("/filmes/", response_model=list[dict])
+
+@app.get("/filmes/", response_model=list[dict]) #Rota para obter todos os filmes cadastrados através do método HTTP GET
 async def read_filmes():
-    query = filmes.select()
-    filmes_list = await database.fetch_all(query)
-    return [dict(filme) for filme in filmes_list]
+    query = filmes.select() #Cria uma consulta SQL para selecionar todos os registros da tabela 'filmes'
+    filmes_list = await database.fetch_all(query) #Executa a consulta no banco de dados e obtém uma lista de registros
+    return [dict(filme) for filme in filmes_list] #Converte a lista de registros em uma lista de dicionários e a retorna como resposta
 
 
-@app.get("/filmes/{filme_id}", response_model=dict)
+@app.get("/filmes/{filme_id}", response_model=dict) #Rota para obter um filme específico por ID através do método HTTP GET
 async def read_filme(filme_id: int):
-    query = filmes.select().where(filmes.c.id == filme_id)
-    filme = await database.fetch_one(query)
-    if filme is None:
+    query = filmes.select().where(filmes.c.id == filme_id) #Cria uma consulta SQL para selecionar um registro da tabela 'filmes' com o ID especificado
+    filme = await database.fetch_one(query)  #Executa a consulta no banco de dados e obtém um único registro
+    if filme is None: #Se nenhum registro for encontrado, retorna uma exceção HTTP 404
         raise HTTPException(status_code=404, detail="Filme não encontrado")
-    return dict(filme)
+    return dict(filme) #Retorna o registro encontrado como um dicionário
 
 
-@app.get("/filmes/filtrar/", response_model=List[dict])
+@app.get("/filmes/filtrar/", response_model=List[dict]) #Rota para filtrar filmes com base em parâmetros de consulta usando o método HTTP GET
 async def filter_filmes(titulo: str = None, ano: int = None):
-    query = filmes.select()
-    if titulo:
+    query = filmes.select() #Cria uma consulta SQL para selecionar todos os registros da tabela 'filmes'
+    if titulo: #Adiciona condições à consulta com base nos parâmetros de consulta fornecidos
         query = query.where(filmes.c.titulo == titulo)
     if ano:
         query = query.where(filmes.c.ano == ano)
 
-    filmes_list = await database.fetch_all(query)
+    filmes_list = await database.fetch_all(query) #Executa a consulta no banco de dados e obtém uma lista de registros filtrados
 
-    return [dict(filme) for filme in filmes_list]
+    return [dict(filme) for filme in filmes_list] #Converte a lista de registros filtrados em uma lista de dicionários e a retorna como resposta
 
 
-@app.put("/filmes/{filme_id}", response_model=dict)
-async def update_filme(filme_id: int, filme_update: FilmeUpdate):
-    # Verifica se o filme existe
-    query = filmes.select().where(filmes.c.id == filme_id)
-    existing_filme = await database.fetch_one(query)
+@app.put("/filmes/{filme_id}", response_model=dict) #Rota para atualizar um filme específico por ID através do método HTTP PUT
+async def update_filme(filme_id: int, filme_update: FilmeUpdate): 
+    query = filmes.select().where(filmes.c.id == filme_id) # Verifica se o filme existe no banco de dados.
+    existing_filme = await database.fetch_one(query) 
     if existing_filme is None:
         raise HTTPException(status_code=404, detail="Filme não encontrado")
 
-    # Atualiza os dados do filme com base no que foi fornecido no corpo da solicitação
-    update_data = filme_update.dict(exclude_unset=True)
+    update_data = filme_update.dict(exclude_unset=True) #Atualiza os dados do filme com base no que foi fornecido no corpo da solicitação.
     if update_data:
         update_query = filmes.update().where(filmes.c.id == filme_id).values(**update_data)
         await database.execute(update_query)
 
-    # Retorna os dados atualizados do filme
-    updated_filme = await database.fetch_one(query)
+    updated_filme = await database.fetch_one(query)  #Retorna os dados atualizados do filme.
     return dict(updated_filme)
 
 
-@app.delete("/filmes/{filme_id}", response_model=dict)
+@app.delete("/filmes/{filme_id}", response_model=dict) #Rota para deletar um filme específico por ID através do método HTTP DELETE
 async def delete_filme(filme_id: int):
-    query = filmes.select().where(filmes.c.id == filme_id)
+    query = filmes.select().where(filmes.c.id == filme_id) #Verifica se o filme existe no banco de dados
     existing_filme = await database.fetch_one(query)
 
-    if existing_filme is None:
+    if existing_filme is None:  #Se o filme não existir, levanta uma exceção HTTP 404
         raise HTTPException(status_code=404, detail="Filme não encontrado")
-    delete_query = filmes.delete().where(filmes.c.id == filme_id)
-    await database.execute(delete_query)
+    
+    delete_query = filmes.delete().where(filmes.c.id == filme_id) #Cria uma consulta SQL para deletar o filme com base no ID fornecido
 
-    return {"status": "Filme deletado com sucesso", "id": filme_id}
+    await database.execute(delete_query) #Executa a consulta no banco de dados para deletar o filme
+
+    return {"status": "Filme deletado com sucesso", "id": filme_id}  #Retorna uma mensagem indicando que o filme foi deletado com sucesso
 
 
-if __name__ == "__main__":
-    import uvicorn
+if __name__ == "__main__": #Verifica se este script está sendo executado diretamente
 
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+    import uvicorn #Importa a biblioteca uvicorn para executar o aplicativo FastAPI
+
+    uvicorn.run(app, host="127.0.0.1", port=8000) #Executa o aplicativo FastAPI usando o servidor uvicorn 
+
+    #O servidor uvicorn é usado para iniciar o aplicativo, que ficará disponível em http://127.0.0.1:8000/ quando o script for executado
