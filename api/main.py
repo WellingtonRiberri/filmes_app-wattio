@@ -30,6 +30,11 @@ class FilmeCreate(BaseModel): #Define uma classe chamada FilmeCreate que herda d
     diretor: str #Define um atributo 'diretor' do tipo str.
     ano: int #Define um atributo 'ano' do tipo int.
 
+class FilmeUpdate(BaseModel):
+    titulo: str = None
+    diretor: str = None
+    ano: int = None
+    
 app = FastAPI()# Cria uma instância do framework FastAPI.
 
 @app.on_event("startup") #Define um evento de startup para a aplicação FastAPI
@@ -51,9 +56,8 @@ async def create_filme(filme: FilmeCreate):
 async def read_filmes():
     query = filmes.select()
     filmes_list = await database.fetch_all(query)
-
-#Convertendo a lista de registros em uma lista de dicionários
     return [dict(filme) for filme in filmes_list]
+
 
 @app.get("/filmes/{filme_id}", response_model=dict)
 async def read_filme(filme_id: int):
@@ -63,26 +67,10 @@ async def read_filme(filme_id: int):
         raise HTTPException(status_code=404, detail="Filme não encontrado")
     return dict(filme)
 
-@app.delete("/filmes/{filme_id}", response_model=dict)
-async def delete_filme(filme_id: int):
-    # Verifica se o filme existe antes de deletar
-    query = filmes.select().where(filmes.c.id == filme_id)
-    existing_filme = await database.fetch_one(query)
-    if existing_filme is None:
-        raise HTTPException(status_code=404, detail="Filme não encontrado")
-
-    # Deleta o filme
-    delete_query = filmes.delete().where(filmes.c.id == filme_id)
-    await database.execute(delete_query)
-
-    return {"status": "Filme deletado com sucesso", "id": filme_id}
 
 @app.get("/filmes/filtrar/", response_model=List[dict])
 async def filter_filmes(titulo: str = None, ano: int = None):
-    # Construa a consulta base
     query = filmes.select()
-
-    # Adicione condições de filtro se os parâmetros foram fornecidos
     if titulo:
         query = query.where(filmes.c.titulo == titulo)
     if ano:
@@ -91,6 +79,39 @@ async def filter_filmes(titulo: str = None, ano: int = None):
     filmes_list = await database.fetch_all(query)
 
     return [dict(filme) for filme in filmes_list]
+
+
+@app.put("/filmes/{filme_id}", response_model=dict)
+async def update_filme(filme_id: int, filme_update: FilmeUpdate):
+    # Verifica se o filme existe
+    query = filmes.select().where(filmes.c.id == filme_id)
+    existing_filme = await database.fetch_one(query)
+    if existing_filme is None:
+        raise HTTPException(status_code=404, detail="Filme não encontrado")
+
+    # Atualiza os dados do filme com base no que foi fornecido no corpo da solicitação
+    update_data = filme_update.dict(exclude_unset=True)
+    if update_data:
+        update_query = filmes.update().where(filmes.c.id == filme_id).values(**update_data)
+        await database.execute(update_query)
+
+    # Retorna os dados atualizados do filme
+    updated_filme = await database.fetch_one(query)
+    return dict(updated_filme)
+
+
+@app.delete("/filmes/{filme_id}", response_model=dict)
+async def delete_filme(filme_id: int):
+    query = filmes.select().where(filmes.c.id == filme_id)
+    existing_filme = await database.fetch_one(query)
+
+    if existing_filme is None:
+        raise HTTPException(status_code=404, detail="Filme não encontrado")
+    delete_query = filmes.delete().where(filmes.c.id == filme_id)
+    await database.execute(delete_query)
+
+    return {"status": "Filme deletado com sucesso", "id": filme_id}
+
 
 if __name__ == "__main__":
     import uvicorn
