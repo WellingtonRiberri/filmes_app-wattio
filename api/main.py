@@ -40,7 +40,7 @@ async def startup_db_client():
 async def shutdown_db_client():
     await database.disconnect() #Desconecta do banco de dados quando a aplicação é encerrada
 
-#Adicionando filme
+
 @app.post("/filmes/", response_model=FilmeCreate) #Rota para adicionar um novo filme através do método HTTP POST
 async def create_filme(filme: FilmeCreate): 
     query = filmes.insert().values(titulo=filme.titulo, diretor=filme.diretor, ano=filme.ano) #Cria uma consulta SQL para inserir os dados do filme na tabela 'filmes'
@@ -76,6 +76,21 @@ async def delete_filme(filme_id: int):
     await database.execute(delete_query)
 
     return {"status": "Filme deletado com sucesso", "id": filme_id}
+
+@app.get("/filmes/filtrar/", response_model=List[dict])
+async def filter_filmes(titulo: str = None, ano: int = None):
+    # Construa a consulta base
+    query = filmes.select()
+
+    # Adicione condições de filtro se os parâmetros foram fornecidos
+    if titulo:
+        query = query.where(filmes.c.titulo == titulo)
+    if ano:
+        query = query.where(filmes.c.ano == ano)
+
+    filmes_list = await database.fetch_all(query)
+
+    return [dict(filme) for filme in filmes_list]
 
 if __name__ == "__main__":
     import uvicorn
