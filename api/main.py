@@ -36,7 +36,7 @@ class FilmeUpdate(BaseModel): #Define uma classe chamada FilmeUpdate que herda d
     diretor: str = None #Diretor do filme
     ano: int = None #Ano de lançamento do filme 
 
-app = FastAPI()# Cria uma instância do framework FastAPI.
+app = FastAPI()#Cria uma instância do framework FastAPI
 
 @app.on_event("startup") #Define um evento de startup para a aplicação FastAPI
 async def startup_db_client(): 
