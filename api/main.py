@@ -30,10 +30,11 @@ class FilmeCreate(BaseModel): #Define uma classe chamada FilmeCreate que herda d
     diretor: str #Define um atributo 'diretor' do tipo str.
     ano: int #Define um atributo 'ano' do tipo int.
 
-class FilmeUpdate(BaseModel):
-    titulo: str = None
-    diretor: str = None
-    ano: int = None
+class FilmeUpdate(BaseModel): #Define uma classe chamada FilmeUpdate que herda de BaseModel do Pydantic
+#Os atributos definidos nesta classe indicam quais campos podem ser atualizados e seus tipos correspondentes
+    titulo: str = None #Titulo do filme
+    diretor: str = None #Diretor do filme
+    ano: int = None #Ano de lançamento do filme 
 
 app = FastAPI()# Cria uma instância do framework FastAPI.
 
